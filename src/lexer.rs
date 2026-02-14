@@ -1,15 +1,19 @@
-use std::str::Chars;
-
 #[derive(Debug, PartialEq)]
 pub enum TokenKind {
-    Space,
-    LeftBrace,
-    RightBrace,
-    Identifier,
     Error,
+    KwExport,
+    KwFn,
+    KwImport,
+    KwLet,
+    KwMut,
+    TokIdentifier,
+    TokLeftBrace,
+    TokNewline,
+    TokRightBrace,
+    TokSpace,
 }
+use TokenKind::*;
 
-// TODO: struct-of-array?
 #[derive(Debug, PartialEq)]
 pub struct Token {
     pub kind: TokenKind,
@@ -23,28 +27,47 @@ impl Token {
 }
 
 pub struct Lexer<'s> {
-    chars: Chars<'s>,
+    source: &'s [u8],
+    offset: usize,
     tokens: Vec<Token>,
 }
 
 impl<'s> Lexer<'s> {
-    pub fn new(source: &'s str) -> Self {
+    pub fn new(source: &'s [u8]) -> Self {
         Self {
-            chars: source.chars(),
+            source,
+            offset: 0,
             tokens: Vec::new(),
         }
     }
 
-    fn next(&mut self) -> Option<char> {
-        self.chars.next()
+    fn offset(&self) -> usize {
+        self.offset
     }
 
-    fn peek(&mut self) -> Option<char> {
-        self.chars.clone().next() // TODO: overhead?
+    fn current(&mut self) -> Option<u8> {
+        self.source.get(self.offset).copied()
     }
 
-    fn push(&mut self, kind: TokenKind, size: u32) {
-        self.tokens.push(Token::new(kind, size));
+    fn peek(&mut self) -> Option<u8> {
+        self.source.get(self.offset + 1).copied()
+    }
+
+    fn advance(&mut self, offset: usize) {
+        self.offset += offset;
+    }
+
+    fn bump(&mut self) {
+        self.advance(1);
+    }
+
+    fn slice(&self, start: usize, end: usize) -> &[u8] {
+        &self.source[start..end]
+    }
+
+    fn push(&mut self, kind: TokenKind, size: usize) {
+        self.tokens.push(Token::new(kind, size as u32));
+        self.bump(); // TODO: elegant or ugly?
     }
 
     fn push_single(&mut self, kind: TokenKind) {
@@ -52,24 +75,46 @@ impl<'s> Lexer<'s> {
     }
 
     fn identifier(&mut self) {
-        let mut size = 1;
+        let start = self.offset();
+        let mut end = start + 1;
+
         while let Some(ch) = self.peek()
             && ch.is_ascii_alphanumeric()
         {
-            size += 1;
-            self.next();
+            end += 1;
+            self.bump();
         }
-        self.push(TokenKind::Identifier, size);
+        let length = end - start;
+
+        match self.slice(start, end) {
+            b"export" => self.push(KwExport, length),
+            b"fn" => self.push(KwFn, length),
+            b"import" => self.push(KwImport, length),
+            b"let" => self.push(KwLet, length),
+            b"mut" => self.push(KwMut, length),
+            _ => self.push(TokIdentifier, length),
+        }
+    }
+
+    fn eol(&mut self) {
+        if let Some(b'\n') = self.peek() {
+            self.bump();
+            self.push(TokNewline, 2);
+        } else {
+            self.push_single(TokNewline);
+        }
     }
 
     pub fn go(mut self) -> Vec<Token> {
-        while let Some(ch) = self.next() {
+        while let Some(ch) = self.current() {
             match ch {
-                ' ' | '\t' => self.push_single(TokenKind::Space),
-                '{' => self.push_single(TokenKind::LeftBrace),
-                '}' => self.push_single(TokenKind::RightBrace),
+                b' ' | b'\t' => self.push_single(TokSpace),
+                b'{' => self.push_single(TokLeftBrace),
+                b'}' => self.push_single(TokRightBrace),
+                b'\n' => self.push_single(TokNewline),
+                b'\r' => self.eol(),
                 ch if ch.is_ascii_alphabetic() => self.identifier(),
-                _ => self.push_single(TokenKind::Error),
+                _ => self.push_single(Error),
             }
         }
         self.tokens
@@ -82,16 +127,23 @@ mod test {
 
     #[test]
     fn simple() {
-        let source = "{}abc \tä";
-        let actual = Lexer::new(&source).go();
-        use TokenKind::*;
+        let source = "{}abc123 \t\\let mut fn\n\r\n\r";
+        let actual = Lexer::new(&source.as_bytes()).go();
         let expected = [
-            Token::new(LeftBrace, 1),
-            Token::new(RightBrace, 1),
-            Token::new(Identifier, 3),
-            Token::new(Space, 1),
-            Token::new(Space, 1),
+            Token::new(TokLeftBrace, 1),
+            Token::new(TokRightBrace, 1),
+            Token::new(TokIdentifier, 6),
+            Token::new(TokSpace, 1),
+            Token::new(TokSpace, 1),
             Token::new(Error, 1),
+            Token::new(KwLet, 3),
+            Token::new(TokSpace, 1),
+            Token::new(KwMut, 3),
+            Token::new(TokSpace, 1),
+            Token::new(KwFn, 2),
+            Token::new(TokNewline, 1),
+            Token::new(TokNewline, 2),
+            Token::new(TokNewline, 1),
         ];
         assert_eq!(actual, expected);
     }
