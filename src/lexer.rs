@@ -39,6 +39,10 @@ impl<'s> Lexer<'s> {
         self.chars.next()
     }
 
+    fn peek(&mut self) -> Option<char> {
+        self.chars.clone().next() // TODO: overhead?
+    }
+
     fn push(&mut self, kind: TokenKind, size: u32) {
         self.tokens.push(Token::new(kind, size));
     }
@@ -49,10 +53,11 @@ impl<'s> Lexer<'s> {
 
     fn identifier(&mut self) {
         let mut size = 1;
-        while let Some(ch) = self.next()
+        while let Some(ch) = self.peek()
             && ch.is_ascii_alphanumeric()
         {
             size += 1;
+            self.next();
         }
         self.push(TokenKind::Identifier, size);
     }
@@ -84,6 +89,7 @@ mod test {
             Token::new(LeftBrace, 1),
             Token::new(RightBrace, 1),
             Token::new(Identifier, 3),
+            Token::new(Space, 1),
             Token::new(Space, 1),
             Token::new(Error, 1),
         ];
