@@ -162,31 +162,21 @@ impl<'s> Parser<'s> {
     }
 
     // TODO: hard to read... is it worth it?
-    fn list<R, A>(
+    fn list<E, R: FnMut(&mut Self) -> E>(
         &mut self,
         mut rule: R,
         left_delim: TokenKind,
         right_delim: TokenKind,
         sep: TokenKind,
-    ) -> Vec<A>
-    where
-        R: FnMut(&mut Self) -> A,
-    {
+    ) -> Vec<E> {
         let mut result = Vec::new();
         self.expect(left_delim);
-        if !self.eat(right_delim) {
-            loop {
-                result.push(rule(self));
+        while !self.eat(right_delim) {
+            result.push(rule(self));
 
-                if !self.eat(sep) {
-                    self.expect(right_delim);
-                    break;
-                }
-
-                // trailing sep is ok
-                if self.eat(right_delim) {
-                    break;
-                }
+            if !self.eat(sep) {
+                self.expect(right_delim);
+                break;
             }
         }
         result
