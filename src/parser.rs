@@ -82,11 +82,24 @@ impl Function {
     }
 }
 
+#[derive(Debug)]
+pub enum ParserError {
+    UnexpectedToken {
+        expected: TokenKind,
+        actual: TokenKind,
+        span: Span,
+    },
+    UnexpectedEof {
+        offset: usize,
+    },
+}
+
 pub struct Parser<'s> {
     stream: Peekable<Iter<'s, Token>>,
     offset: usize,
 }
 
+// TODO: error recovery by re-syncing
 impl<'s> Parser<'s> {
     pub fn new(tokens: &'s [Token]) -> Self {
         let mut result = Self {
@@ -135,79 +148,91 @@ impl<'s> Parser<'s> {
         result
     }
 
-    fn expect(&mut self, expected: TokenKind) {
-        if let Some(actual) = self.peek()
-            && actual.kind() == expected
-        {
-            self.next();
-        } else {
-            panic!()
+    fn expect(&mut self, expected: TokenKind) -> Result<(), ParserError> {
+        match self.peek() {
+            Some(actual) if actual.kind() == expected => {
+                self.next();
+                Ok(())
+            }
+            Some(actual) => {
+                let start = self.offset();
+                self.next();
+                let stop = self.offset();
+                Err(ParserError::UnexpectedToken {
+                    expected,
+                    actual: actual.kind(),
+                    span: Span::new(start, stop),
+                })
+            }
+            None => Err(ParserError::UnexpectedEof {
+                offset: self.offset(),
+            }),
         }
     }
 
-    fn identifier(&mut self) -> Identifier {
+    fn identifier(&mut self) -> Result<Identifier, ParserError> {
         let start = self.offset();
-        self.expect(TokenKind::TokIdentifier);
+        self.expect(TokenKind::TokIdentifier)?;
         let stop = self.offset();
-        Identifier {
+        Ok(Identifier {
             name: Span::new(start, stop),
-        }
+        })
     }
 
-    fn parameter(&mut self) -> Parameter {
-        let name = self.identifier();
-        self.expect(TokenKind::TokColon);
-        let kind = self.identifier();
-        Parameter { name, kind }
+    fn parameter(&mut self) -> Result<Parameter, ParserError> {
+        let name = self.identifier()?;
+        self.expect(TokenKind::TokColon)?;
+        let kind = self.identifier()?;
+        Ok(Parameter { name, kind })
     }
 
     // TODO: hard to read... is it worth it?
-    fn list<E, R: FnMut(&mut Self) -> E>(
+    fn list<E, R: FnMut(&mut Self) -> Result<E, ParserError>>(
         &mut self,
         mut rule: R,
         left_delim: TokenKind,
         right_delim: TokenKind,
         sep: TokenKind,
-    ) -> Vec<E> {
+    ) -> Result<Vec<E>, ParserError> {
         let mut result = Vec::new();
-        self.expect(left_delim);
+        self.expect(left_delim)?;
         while !self.eat(right_delim) {
-            result.push(rule(self));
+            result.push(rule(self)?);
 
             if !self.eat(sep) {
-                self.expect(right_delim);
+                self.expect(right_delim)?;
                 break;
             }
         }
-        result
+        Ok(result)
     }
 
-    fn function(&mut self) -> Function {
-        self.expect(TokenKind::KwFn);
+    fn function(&mut self) -> Result<Function, ParserError> {
+        self.expect(TokenKind::KwFn)?;
 
-        let name = self.identifier();
+        let name = self.identifier()?;
 
         let parameter = self.list(
             Self::parameter,
             TokenKind::TokLeftParen,
             TokenKind::TokRightParen,
             TokenKind::TokComma,
-        );
+        )?;
 
         let mut kind = None;
         if self.eat(TokenKind::TokArrow) {
-            kind = Some(self.identifier());
+            kind = Some(self.identifier()?);
         }
 
-        self.expect(TokenKind::TokSemiColon);
-        Function {
+        self.expect(TokenKind::TokSemiColon)?;
+        Ok(Function {
             name,
             parameter,
             kind,
-        }
+        })
     }
 
-    pub fn go(&mut self) -> Function {
+    pub fn go(&mut self) -> Result<Function, ParserError> {
         self.function()
     }
 }

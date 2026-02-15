@@ -4,6 +4,6 @@ mod parser;
 fn main() {
     let source = "fn bla(a:b, c:d,) -> e;";
     let tokens = lexer::Lexer::new(source).go();
-    let tree = parser::Parser::new(&tokens).go();
+    let tree = parser::Parser::new(&tokens).go().unwrap();
     println!("{}", tree.show(source));
 }
