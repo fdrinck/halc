@@ -12,6 +12,7 @@ pub enum TokenKind {
     TokColon,
     TokComma,
     TokDot,
+    TokEquals,
     TokIdentifier,
     TokLeftBrace,
     TokLeftParen,
@@ -108,6 +109,7 @@ impl<'s> Lexer<'s> {
                 ',' => self.push_single(TokComma),
                 ';' => self.push_single(TokSemiColon),
                 ':' => self.push_single(TokColon),
+                '=' => self.push_single(TokEquals),
                 '(' => self.push_single(TokLeftParen),
                 '{' => self.push_single(TokLeftBrace),
                 '}' => self.push_single(TokRightBrace),
@@ -128,13 +130,14 @@ mod test {
 
     #[test]
     fn simple() {
-        let source = ".,;:(){}abc123 \t\\let mut fn\n\r\n\r";
+        let source = ".,;:=(){}abc123 \t\\let mut fn\n\r\n\r";
         let actual = Lexer::new(&source).go();
         let expected = [
             Token::new(TokDot, 1),
             Token::new(TokComma, 1),
             Token::new(TokSemiColon, 1),
             Token::new(TokColon, 1),
+            Token::new(TokEquals, 1),
             Token::new(TokLeftParen, 1),
             Token::new(TokRightParen, 1),
             Token::new(TokLeftBrace, 1),
