@@ -9,6 +9,7 @@ pub enum TokenKind {
     KwImport,
     KwLet,
     KwMut,
+    TokArrow,
     TokColon,
     TokComma,
     TokDot,
@@ -16,6 +17,7 @@ pub enum TokenKind {
     TokIdentifier,
     TokLeftBrace,
     TokLeftParen,
+    TokMinus,
     TokNewline,
     TokRightBrace,
     TokRightParen,
@@ -113,6 +115,15 @@ impl<'s> Lexer<'s> {
         }
     }
 
+    fn minus_or_arrow(&mut self) {
+        if let Some((_, '>')) = self.peek() {
+            self.next();
+            self.push(TokArrow, 2);
+        } else {
+            self.push_single(TokMinus);
+        }
+    }
+
     pub fn go(mut self) -> Vec<Token> {
         while let Some((offset, ch)) = self.next() {
             match ch {
@@ -128,6 +139,7 @@ impl<'s> Lexer<'s> {
                 ')' => self.push_single(TokRightParen),
                 '\n' => self.push_single(TokNewline),
                 '\r' => self.eol(),
+                '-' => self.minus_or_arrow(),
                 ch if ch.is_ascii_alphabetic() => self.identifier(offset),
                 _ => self.push_single(Error),
             }
@@ -142,7 +154,7 @@ mod test {
 
     #[test]
     fn simple() {
-        let source = ".,;:=(){}abc123 \t\\let mut fn\n\r\n\r";
+        let source = ".,;:=(){}-->abc123 \t\\let mut fn\n\r\n\r";
         let actual = Lexer::new(&source).go();
         let expected = [
             Token::new(TokDot, 1),
@@ -154,6 +166,8 @@ mod test {
             Token::new(TokRightParen, 1),
             Token::new(TokLeftBrace, 1),
             Token::new(TokRightBrace, 1),
+            Token::new(TokMinus, 1),
+            Token::new(TokArrow, 2),
             Token::new(TokIdentifier, 6),
             Token::new(TokSpace, 1),
             Token::new(TokSpace, 1),
