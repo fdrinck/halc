@@ -161,28 +161,54 @@ impl<'s> Parser<'s> {
         Parameter { name, kind }
     }
 
-    fn function(&mut self) -> Function {
-        self.expect(TokenKind::KwFn);
-        let name = self.identifier();
-        let mut parameter = Vec::new();
-        self.expect(TokenKind::TokLeftParen);
-        if !self.eat(TokenKind::TokRightParen) {
+    // TODO: hard to read... is it worth it?
+    fn list<R, A>(
+        &mut self,
+        mut rule: R,
+        left_delim: TokenKind,
+        right_delim: TokenKind,
+        sep: TokenKind,
+    ) -> Vec<A>
+    where
+        R: FnMut(&mut Self) -> A,
+    {
+        let mut result = Vec::new();
+        self.expect(left_delim);
+        if !self.eat(right_delim) {
             loop {
-                parameter.push(self.parameter());
-                if !self.eat(TokenKind::TokComma) {
-                    self.expect(TokenKind::TokRightParen);
+                result.push(rule(self));
+
+                if !self.eat(sep) {
+                    self.expect(right_delim);
                     break;
                 }
-                if self.eat(TokenKind::TokRightParen) {
+
+                // trailing sep is ok
+                if self.eat(right_delim) {
                     break;
                 }
             }
         }
+        result
+    }
+
+    fn function(&mut self) -> Function {
+        self.expect(TokenKind::KwFn);
+
+        let name = self.identifier();
+
+        let parameter = self.list(
+            Self::parameter,
+            TokenKind::TokLeftParen,
+            TokenKind::TokRightParen,
+            TokenKind::TokComma,
+        );
 
         let mut kind = None;
         if self.eat(TokenKind::TokArrow) {
             kind = Some(self.identifier());
         }
+
         self.expect(TokenKind::TokSemiColon);
         Function {
             name,
