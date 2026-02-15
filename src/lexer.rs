@@ -15,10 +15,15 @@ pub enum TokenKind {
     TokDot,
     TokEquals,
     TokIdentifier,
+    TokLeftAngle,
     TokLeftBrace,
     TokLeftParen,
     TokMinus,
+    TokMinusEquals,
     TokNewline,
+    TokPlus,
+    TokPlusEquals,
+    TokRightAngle,
     TokRightBrace,
     TokRightParen,
     TokSemiColon,
@@ -115,12 +120,31 @@ impl<'s> Lexer<'s> {
         }
     }
 
-    fn minus_or_arrow(&mut self) {
-        if let Some((_, '>')) = self.peek() {
-            self.next();
-            self.push(TokArrow, 2);
-        } else {
-            self.push_single(TokMinus);
+    fn minus(&mut self) {
+        match self.peek() {
+            Some((_, '>')) => {
+                self.next();
+                self.push(TokArrow, 2);
+            }
+            Some((_, '=')) => {
+                self.next();
+                self.push(TokMinusEquals, 2);
+            }
+            _ => {
+                self.push_single(TokMinus);
+            }
+        }
+    }
+
+    fn plus(&mut self) {
+        match self.peek() {
+            Some((_, '=')) => {
+                self.next();
+                self.push(TokPlusEquals, 2);
+            }
+            _ => {
+                self.push_single(TokPlus);
+            }
         }
     }
 
@@ -135,11 +159,14 @@ impl<'s> Lexer<'s> {
                 '=' => self.push_single(TokEquals),
                 '(' => self.push_single(TokLeftParen),
                 '{' => self.push_single(TokLeftBrace),
+                '<' => self.push_single(TokLeftAngle),
                 '}' => self.push_single(TokRightBrace),
                 ')' => self.push_single(TokRightParen),
+                '>' => self.push_single(TokRightAngle),
                 '\n' => self.push_single(TokNewline),
                 '\r' => self.eol(),
-                '-' => self.minus_or_arrow(),
+                '-' => self.minus(),
+                '+' => self.plus(),
                 ch if ch.is_ascii_alphabetic() => self.identifier(offset),
                 _ => self.push_single(Error),
             }
@@ -154,7 +181,7 @@ mod test {
 
     #[test]
     fn simple() {
-        let source = ".,;:=(){}-->abc123 \t\\let mut fn\n\r\n\r";
+        let source = ".,;:=(){}<>--=->++=abc123 \t\\let mut fn\n\r\n\r";
         let actual = Lexer::new(&source).go();
         let expected = [
             Token::new(TokDot, 1),
@@ -166,8 +193,13 @@ mod test {
             Token::new(TokRightParen, 1),
             Token::new(TokLeftBrace, 1),
             Token::new(TokRightBrace, 1),
+            Token::new(TokLeftAngle, 1),
+            Token::new(TokRightAngle, 1),
             Token::new(TokMinus, 1),
+            Token::new(TokMinusEquals, 2),
             Token::new(TokArrow, 2),
+            Token::new(TokPlus, 1),
+            Token::new(TokPlusEquals, 2),
             Token::new(TokIdentifier, 6),
             Token::new(TokSpace, 1),
             Token::new(TokSpace, 1),
