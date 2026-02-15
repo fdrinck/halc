@@ -28,6 +28,7 @@ pub enum TokenKind {
     TokRightParen,
     TokSemiColon,
     TokSpace,
+    TokUnderscore,
 }
 use TokenKind::*;
 
@@ -59,6 +60,10 @@ pub struct Lexer<'s> {
     source: &'s str,
     chars: Peekable<CharIndices<'s>>,
     tokens: Vec<Token>,
+}
+
+fn is_ident_ch(ch: char) -> bool {
+    ch.is_ascii_alphanumeric() || ch == '_'
 }
 
 impl<'s> Lexer<'s> {
@@ -94,7 +99,7 @@ impl<'s> Lexer<'s> {
         let mut end = start + 1;
 
         while let Some((new_end, ch)) = self.peek()
-            && ch.is_ascii_alphanumeric()
+            && is_ident_ch(ch)
         {
             end = new_end + 1;
             self.next();
@@ -148,6 +153,17 @@ impl<'s> Lexer<'s> {
         }
     }
 
+    fn underscore(&mut self, offset: usize) {
+        if let Some((_, ch)) = self.peek()
+            && !is_ident_ch(ch)
+        {
+            self.push_single(TokUnderscore);
+        } else {
+            // "_1", "__" and other strange names are allowed
+            self.identifier(offset);
+        }
+    }
+
     pub fn go(mut self) -> Vec<Token> {
         while let Some((offset, ch)) = self.next() {
             match ch {
@@ -167,6 +183,7 @@ impl<'s> Lexer<'s> {
                 '\r' => self.eol(),
                 '-' => self.minus(),
                 '+' => self.plus(),
+                '_' => self.underscore(offset),
                 ch if ch.is_ascii_alphabetic() => self.identifier(offset),
                 _ => self.push_single(Error),
             }
@@ -181,7 +198,7 @@ mod test {
 
     #[test]
     fn simple() {
-        let source = ".,;:=(){}<>--=->++=abc123 \t\\let mut fn\n\r\n\r";
+        let source = ".,;:=(){}<>--=->++=abc123 _1_ _\t\\let mut fn\n\r\n\r";
         let actual = Lexer::new(&source).go();
         let expected = [
             Token::new(TokDot, 1),
@@ -202,6 +219,9 @@ mod test {
             Token::new(TokPlusEquals, 2),
             Token::new(TokIdentifier, 6),
             Token::new(TokSpace, 1),
+            Token::new(TokIdentifier, 3),
+            Token::new(TokSpace, 1),
+            Token::new(TokUnderscore, 1),
             Token::new(TokSpace, 1),
             Token::new(Error, 1),
             Token::new(KwLet, 3),
