@@ -165,12 +165,20 @@ impl<'s> Parser<'s> {
         self.expect(TokenKind::KwFn);
         let name = self.identifier();
         let mut parameter = Vec::new();
-        if self.eat(TokenKind::TokLeftParen) {
-            while !self.eat(TokenKind::TokRightParen) {
+        self.expect(TokenKind::TokLeftParen);
+        if !self.eat(TokenKind::TokRightParen) {
+            loop {
                 parameter.push(self.parameter());
-                self.eat(TokenKind::TokComma);
+                if !self.eat(TokenKind::TokComma) {
+                    self.expect(TokenKind::TokRightParen);
+                    break;
+                }
+                if self.eat(TokenKind::TokRightParen) {
+                    break;
+                }
             }
         }
+
         let mut kind = None;
         if self.eat(TokenKind::TokArrow) {
             kind = Some(self.identifier());
