@@ -1,7 +1,7 @@
 use std::iter::Peekable;
 use std::str::CharIndices;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TokenKind {
     Error,
     KwExport,
@@ -24,15 +24,27 @@ pub enum TokenKind {
 }
 use TokenKind::*;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Token {
-    pub kind: TokenKind,
-    pub size: u32,
+    kind: TokenKind,
+    size: u32,
 }
 
 impl Token {
     fn new(kind: TokenKind, size: u32) -> Self {
         Self { kind, size }
+    }
+
+    pub fn is_ws(&self) -> bool {
+        matches!(self.kind, TokSpace | TokNewline)
+    }
+
+    pub fn size(&self) -> usize {
+        self.size as usize
+    }
+
+    pub fn kind(&self) -> TokenKind {
+        self.kind
     }
 }
 

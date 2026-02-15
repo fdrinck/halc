@@ -1,7 +1,9 @@
 mod lexer;
+mod parser;
 
 fn main() {
-    let source = " {  } blabla123";
+    let source = "fn bla;";
     let tokens = lexer::Lexer::new(source).go();
-    println!("{:?}", tokens);
+    let tree = parser::Parser::new(&tokens).go();
+    println!("{}", tree.show(source));
 }
