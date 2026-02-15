@@ -51,8 +51,8 @@ impl<'s> Lexer<'s> {
         }
     }
 
-    fn peek(&mut self) -> Option<char> {
-        self.chars.peek().map(|(_, ch)| *ch)
+    fn peek(&mut self) -> Option<(usize, char)> {
+        self.chars.peek().copied()
     }
 
     fn next(&mut self) -> Option<(usize, char)> {
@@ -74,10 +74,10 @@ impl<'s> Lexer<'s> {
     fn identifier(&mut self, start: usize) {
         let mut end = start + 1;
 
-        while let Some(ch) = self.peek()
+        while let Some((new_end, ch)) = self.peek()
             && ch.is_ascii_alphanumeric()
         {
-            end += 1;
+            end = new_end + 1;
             self.next();
         }
         let length = end - start;
@@ -93,7 +93,7 @@ impl<'s> Lexer<'s> {
     }
 
     fn eol(&mut self) {
-        if let Some('\n') = self.peek() {
+        if let Some((_, '\n')) = self.peek() {
             self.next();
             self.push(TokNewline, 2);
         } else {
