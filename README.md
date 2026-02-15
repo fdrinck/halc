@@ -1,5 +1,5 @@
-# MMIO-lang
+# halc
 
-An experimental language for low-level MMIO register access.
+An experimental language for low-level embedded software.
 
-**AI disclamer**: contains no LLM output.
+**AI disclamer**: Contains no LLM output.
