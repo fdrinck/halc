@@ -1,47 +1,7 @@
-use crate::ast::{Identifier, Span};
+use crate::ast::{Function, Identifier, Parameter, Span};
 use crate::lexer::*;
 use std::iter::Peekable;
 use std::slice::Iter;
-
-#[derive(Debug)]
-pub struct Parameter {
-    name: Identifier,
-    kind: Identifier,
-}
-
-impl Parameter {
-    pub fn show(&self, source: &str) -> String {
-        format!(
-            "Parameter {} : {}",
-            self.name.show(source),
-            self.kind.show(source)
-        )
-    }
-}
-
-#[derive(Debug)]
-pub struct Function {
-    name: Identifier,
-    parameter: Vec<Parameter>,
-    kind: Option<Identifier>,
-}
-
-impl Function {
-    pub fn show(&self, source: &str) -> String {
-        let mut result = "Function\n".to_owned();
-        let name = self.name.show(source);
-        result.push_str(&format!("  name = {}\n", name));
-        for (idx, parameter) in self.parameter.iter().enumerate() {
-            let parameter = parameter.show(source);
-            result.push_str(&format!("  p[{}] = {}\n", idx, parameter));
-        }
-        if let Some(kind) = &self.kind {
-            let kind = kind.show(source);
-            result.push_str(&format!("  kind = {}\n", kind));
-        }
-        result
-    }
-}
 
 #[derive(Debug)]
 pub enum ParserError {
@@ -142,7 +102,7 @@ impl<'s> Parser<'s> {
         let name = self.identifier()?;
         self.expect(TokenKind::TokColon)?;
         let kind = self.identifier()?;
-        Ok(Parameter { name, kind })
+        Ok(Parameter::new(name, kind))
     }
 
     // TODO: hard to read... is it worth it?
@@ -184,11 +144,7 @@ impl<'s> Parser<'s> {
         }
 
         self.expect(TokenKind::TokSemiColon)?;
-        Ok(Function {
-            name,
-            parameter,
-            kind,
-        })
+        Ok(Function::new(name, parameter, kind))
     }
 
     pub fn go(&mut self) -> Result<Function, ParserError> {
