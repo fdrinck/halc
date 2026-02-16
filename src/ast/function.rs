@@ -1,3 +1,4 @@
+use super::Block;
 use super::Identifier;
 
 #[derive(Debug)]
@@ -8,7 +9,7 @@ pub struct Parameter {
 
 impl Parameter {
     pub fn new(name: Identifier, kind: Identifier) -> Self {
-        Parameter { name, kind }
+        Self { name, kind }
     }
 
     pub fn show(&self, source: &str) -> String {
@@ -25,14 +26,21 @@ pub struct Function {
     name: Identifier,
     parameters: Vec<Parameter>,
     kind: Option<Identifier>,
+    body: Block,
 }
 
 impl Function {
-    pub fn new(name: Identifier, parameters: Vec<Parameter>, kind: Option<Identifier>) -> Self {
-        Function {
+    pub fn new(
+        name: Identifier,
+        parameters: Vec<Parameter>,
+        kind: Option<Identifier>,
+        body: Block,
+    ) -> Self {
+        Self {
             name,
             parameters,
             kind,
+            body,
         }
     }
 
@@ -48,6 +56,8 @@ impl Function {
             let kind = kind.show(source);
             result.push_str(&format!("  kind = {}\n", kind));
         }
+        let body = self.body.show(source);
+        result.push_str(&format!("  block = {}\n", body));
         result
     }
 }

@@ -1,4 +1,4 @@
-use crate::ast::{Function, Identifier, Parameter, Span};
+use crate::ast::{Block, Function, Identifier, Parameter, Span};
 use crate::lexer::*;
 use std::iter::Peekable;
 use std::slice::Iter;
@@ -126,6 +126,12 @@ impl<'s> Parser<'s> {
         Ok(result)
     }
 
+    fn block(&mut self) -> Result<Block, ParserError> {
+        self.expect(TokenKind::TokLeftBrace)?;
+        self.expect(TokenKind::TokRightBrace)?;
+        Ok(Block::new())
+    }
+
     fn function(&mut self) -> Result<Function, ParserError> {
         self.expect(TokenKind::KwFn)?;
 
@@ -143,8 +149,8 @@ impl<'s> Parser<'s> {
             kind = Some(self.identifier()?);
         }
 
-        self.expect(TokenKind::TokSemiColon)?;
-        Ok(Function::new(name, parameter, kind))
+        let body = self.block()?;
+        Ok(Function::new(name, parameter, kind, body))
     }
 
     pub fn go(&mut self) -> Result<Function, ParserError> {
