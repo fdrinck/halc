@@ -1,18 +1,7 @@
-use crate::ast::Span;
+use crate::ast::{Identifier, Span};
 use crate::lexer::*;
 use std::iter::Peekable;
 use std::slice::Iter;
-
-#[derive(Debug)]
-pub struct Identifier {
-    name: Span,
-}
-
-impl Identifier {
-    pub fn show(&self, source: &str) -> String {
-        format!("Identifier {}", self.name.slice(source))
-    }
-}
 
 #[derive(Debug)]
 pub struct Parameter {
@@ -146,9 +135,7 @@ impl<'s> Parser<'s> {
         let start = self.offset();
         self.expect(TokenKind::TokIdentifier)?;
         let stop = self.offset();
-        Ok(Identifier {
-            name: Span::new(start, stop),
-        })
+        Ok(Identifier::new(Span::new(start, stop)))
     }
 
     fn parameter(&mut self) -> Result<Parameter, ParserError> {
