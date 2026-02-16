@@ -1,4 +1,4 @@
-use crate::ast::{Block, Function, Identifier, Parameter, Span};
+use crate::ast::{Binding, Block, Function, Identifier, Parameter, Span};
 use crate::lexer::*;
 use std::iter::Peekable;
 use std::slice::Iter;
@@ -126,10 +126,28 @@ impl<'s> Parser<'s> {
         Ok(result)
     }
 
+    fn binding(&mut self) -> Result<Binding, ParserError> {
+        self.expect(TokenKind::KwLet)?;
+        let mutable = self.eat(TokenKind::KwMut);
+        let name = self.identifier()?;
+        self.expect(TokenKind::TokEquals)?;
+        let expression = self.identifier()?;
+        self.expect(TokenKind::TokSemiColon)?;
+        Ok(Binding::new(name, mutable, expression))
+    }
+
     fn block(&mut self) -> Result<Block, ParserError> {
         self.expect(TokenKind::TokLeftBrace)?;
+        let mut statements = Vec::new();
+        match self.peek().map(|t| t.kind()) {
+            Some(TokenKind::KwLet) => statements.push(self.binding()?),
+            Some(TokenKind::TokSemiColon) => {
+                self.next();
+            }
+            _ => panic!(),
+        }
         self.expect(TokenKind::TokRightBrace)?;
-        Ok(Block::new())
+        Ok(Block::new(statements))
     }
 
     fn function(&mut self) -> Result<Function, ParserError> {

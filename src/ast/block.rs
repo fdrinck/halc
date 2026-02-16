@@ -1,12 +1,20 @@
+use super::Binding;
+
 #[derive(Debug)]
-pub struct Block {}
+pub struct Block {
+    statements: Vec<Binding>,
+}
 
 impl Block {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(statements: Vec<Binding>) -> Self {
+        Self { statements }
     }
 
     pub fn show(&self, source: &str) -> String {
-        format!("Block")
+        let mut result = "Block\n".to_owned();
+        for statement in &self.statements {
+            result.push_str(&format!("{}", statement.show(source)));
+        }
+        result
     }
 }

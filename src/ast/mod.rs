@@ -1,8 +1,10 @@
+mod binding;
 mod block;
 mod function;
 mod identifier;
 mod span;
 
+pub use binding::Binding;
 pub use block::Block;
 pub use function::{Function, Parameter};
 pub use identifier::Identifier;
