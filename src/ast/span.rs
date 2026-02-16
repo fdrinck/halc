@@ -7,6 +7,8 @@ impl Span {
         assert!(start <= end);
         let length = end - start;
         assert!(length >> 16 == 0);
+
+        // match length to token size
         Self(((start as u64) << 16) | (length & 0xFFFF) as u64)
     }
 

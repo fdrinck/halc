@@ -35,11 +35,11 @@ use TokenKind::*;
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Token {
     kind: TokenKind,
-    size: u32,
+    size: u16, // match to max span length
 }
 
 impl Token {
-    fn new(kind: TokenKind, size: u32) -> Self {
+    fn new(kind: TokenKind, size: u16) -> Self {
         Self { kind, size }
     }
 
@@ -88,7 +88,7 @@ impl<'s> Lexer<'s> {
     }
 
     fn push(&mut self, kind: TokenKind, size: usize) {
-        self.tokens.push(Token::new(kind, size as u32));
+        self.tokens.push(Token::new(kind, size.try_into().unwrap()));
     }
 
     fn push_single(&mut self, kind: TokenKind) {
