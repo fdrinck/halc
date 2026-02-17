@@ -1,5 +1,5 @@
-use super::Block;
-use super::Identifier;
+use super::{Block, Identifier, Show};
+use std::fmt::Write;
 
 #[derive(Debug)]
 pub struct Parameter {
@@ -11,13 +11,14 @@ impl Parameter {
     pub fn new(name: Identifier, kind: Identifier) -> Self {
         Self { name, kind }
     }
+}
 
-    pub fn show(&self, source: &str) -> String {
-        format!(
-            "Parameter {} : {}",
-            self.name.show(source),
-            self.kind.show(source)
-        )
+impl Show for Parameter {
+    fn show(&self, source: &str, level: usize, buffer: &mut String) {
+        let indent = Self::get_indent(level);
+        writeln!(buffer, "{:indent$}Parameter", "",).unwrap();
+        self.name.show(source, level + 1, buffer);
+        self.kind.show(source, level + 1, buffer);
     }
 }
 
@@ -43,21 +44,19 @@ impl Function {
             body,
         }
     }
+}
 
-    pub fn show(&self, source: &str) -> String {
-        let mut result = "Function\n".to_owned();
-        let name = self.name.show(source);
-        result.push_str(&format!("  name = {}\n", name));
-        for (idx, parameter) in self.parameters.iter().enumerate() {
-            let parameter = parameter.show(source);
-            result.push_str(&format!("  p[{}] = {}\n", idx, parameter));
+impl Show for Function {
+    fn show(&self, source: &str, level: usize, buffer: &mut String) {
+        let indent = Self::get_indent(level);
+        writeln!(buffer, "{:indent$}Function", "").unwrap();
+        self.name.show(source, level + 1, buffer);
+        for parameter in &self.parameters {
+            parameter.show(source, level + 1, buffer);
         }
         if let Some(kind) = &self.kind {
-            let kind = kind.show(source);
-            result.push_str(&format!("  kind = {}\n", kind));
+            kind.show(source, level + 1, buffer);
         }
-        let body = self.body.show(source);
-        result.push_str(&format!("  block = {}\n", body));
-        result
+        self.body.show(source, level + 1, buffer);
     }
 }

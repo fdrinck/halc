@@ -1,4 +1,5 @@
-use super::Identifier;
+use super::{Identifier, Show};
+use std::fmt::Write;
 
 #[derive(Debug)]
 pub struct Binding {
@@ -15,10 +16,13 @@ impl Binding {
             expression,
         }
     }
+}
 
-    pub fn show(&self, source: &str) -> String {
-        let name = self.name.show(source);
-        let expression = self.expression.show(source);
-        format!("Binding (mut={}) {} = {}", self.mutable, name, expression)
+impl Show for Binding {
+    fn show(&self, source: &str, level: usize, buffer: &mut String) {
+        let indent = Self::get_indent(level);
+        writeln!(buffer, "{:indent$}Binding (mut={})", "", self.mutable).unwrap();
+        self.name.show(source, level + 1, buffer);
+        self.expression.show(source, level + 1, buffer);
     }
 }

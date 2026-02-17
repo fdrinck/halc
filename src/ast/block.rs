@@ -1,4 +1,5 @@
-use super::Binding;
+use super::{Binding, Show};
+use std::fmt::Write;
 
 #[derive(Debug)]
 pub struct Block {
@@ -9,12 +10,14 @@ impl Block {
     pub fn new(statements: Vec<Binding>) -> Self {
         Self { statements }
     }
+}
 
-    pub fn show(&self, source: &str) -> String {
-        let mut result = "Block\n".to_owned();
+impl Show for Block {
+    fn show(&self, source: &str, level: usize, buffer: &mut String) {
+        let indent = Self::get_indent(level);
+        writeln!(buffer, "{:indent$}Block", "").unwrap();
         for statement in &self.statements {
-            result.push_str(&format!("{}", statement.show(source)));
+            statement.show(source, level + 1, buffer);
         }
-        result
     }
 }
