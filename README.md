@@ -1,5 +1,5 @@
 # halc
 
-An experimental language for low-level embedded software. Intended as a personal exercise. Status: some sketches of a parser, that's it.
+An experimental language for low-level embedded software. Intended as a personal exercise. Status: work is ongoing, nothing usable yet.
 
-**AI disclamer**: Contains no LLM output.
+**AI disclamer**: This project contains no LLM output.
