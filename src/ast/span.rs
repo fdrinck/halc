@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 #[derive(Debug, Copy, Clone)]
 pub struct Span(u64);
 
@@ -26,5 +28,9 @@ impl Span {
 
     pub fn slice<'s>(&self, source: &'s str) -> &'s str {
         &source[self.start()..self.end()]
+    }
+
+    pub fn range(&self) -> Range<usize> {
+        self.start()..self.end()
     }
 }

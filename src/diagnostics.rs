@@ -1,15 +1,15 @@
 use crate::ast::Span;
+use codespan_reporting::diagnostic::{Diagnostic, Label};
+use codespan_reporting::files::SimpleFile;
+use codespan_reporting::term::emit_to_string;
 
 pub fn show_source_context(source: &str, span: Span) -> String {
-    let front = &source[..span.start()];
-    let context_start = front.rfind(|ch| ch == '\n').map(|i| i + 1).unwrap_or(0);
-    let back = &source[span.end()..];
-    let context_end = span.end() + back.find(|ch| ch == '\n').unwrap_or(back.len());
-    let indent = span.start() - context_start;
-    let underline = "~".repeat(span.length());
-    format!(
-        "{}\n{:indent$}{underline}",
-        &source[context_start..context_end],
-        ""
-    )
+    let file = SimpleFile::new("example", source);
+    let diagnostic = Diagnostic::error()
+        .with_message("example")
+        .with_label(Label::primary((), span.range()).with_message("here"));
+    let mut writer = String::new();
+    let config = codespan_reporting::term::Config::default();
+    emit_to_string(&mut writer, &config, &file, &diagnostic).unwrap();
+    writer
 }
